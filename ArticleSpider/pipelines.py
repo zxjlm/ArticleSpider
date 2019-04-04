@@ -4,13 +4,18 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-import MySQLdb
+# import MySQLdb
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.exporters import JsonItemExporter
 from scrapy.exceptions import DropItem
 import scrapy
 import codecs
 import json
+
+import MySQLdb
+import MySQLdb.cursors
+
+from twisted.enterprise import adbapi
 
 
 class ArticlespiderPipeline(object):
@@ -49,8 +54,10 @@ class JsonExpoterPipeline(object):
 
 
 class MysqlPipeline(object):
+    #采用同步的机制写入mysql
     def __init__(self):
-        self.conn = MySQLdb.connect('127.0.0.1', 'root', 'zxj6131ming', 'artical_spider', charset='utf8', use_unicode=True)
+        self.conn = MySQLdb.connect('127.0.0.1', 'root', 'zxj6131ming', 'artical_spider', charset='utf8',
+                                    use_unicode=True)
         self.cursor = self.conn.cursor()
 
     def process_item(self, item, spider):
@@ -58,8 +65,45 @@ class MysqlPipeline(object):
             insert into article_spider(title,datetime,praise_num)
             value (%s,%s,%s)
         """
-        self.cursor.execute(insert_sql, (item['title'], item['datetime'], item['praise_num']))
+        self.cursor.execute(insert_sql, (item['title'] , item['datetime'], item['praise_num']))
         self.conn.commit()
+
+
+class MysqlTwstedPipeles(object):
+    def __init__(self,dbpool):
+        self.dbpool=dbpool
+
+    @classmethod
+    def from_settings(cls, settings):
+        dbparms = dict(
+            host=settings['MYSQL_HOSTS'],
+            user=settings['MYSQL_USER'],
+            password=settings['MYSQL_PASSWORD'],
+            db=settings['MYSQL_DB'],
+            cursorclass=MySQLdb.cursors.DictCursor,
+            use_unicode=True
+        )
+        dbpool=adbapi.ConnectionPool("MySQLdb", **dbparms)
+
+        return cls(dbpool)
+
+    def process_item(self, item, spider):
+        #使用twisted将mysql插入变为异步执行
+        query=self.dbpool.runInteraction(self.do_insert,item)
+        query.addErrback(self.handler_error)
+
+    def handler_error(self,failure):
+        #处理异步插入的异常
+        print(failure)
+
+
+    def do_insert(self,cursor,item):
+        #执行插入
+        insert_sql = """
+            insert into article_spider(title,datetime,praise_num)
+            value (%s,%s,%s)    
+        """
+        cursor.execute(insert_sql, (item['title'], item['datetime'], item['praise_num']))
 
 
 class ArticleImagePipeline(ImagesPipeline):

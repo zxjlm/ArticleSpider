@@ -4,8 +4,11 @@ import re
 import scrapy
 from ArticleSpider.items import ArticlespiderItem
 from scrapy.http import Request
+from scrapy.loader import ItemLoader
 
 from ArticleSpider.utils.common import get_md5
+
+
 
 
 class JobboleSpider(scrapy.Spider):
@@ -44,5 +47,12 @@ class JobboleSpider(scrapy.Spider):
         news['content'] = content
         news['img_url'] = [img_url]
         news['url_object_id'] = get_md5(img_url)
+
+
+        item_loader=ItemLoader(item=ArticlespiderItem,response=response)
+        item_loader.add_css()
+        item_loader.add_xpath()
+        item_loader.add_value()
+
 
         yield news

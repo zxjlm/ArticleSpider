@@ -70,7 +70,9 @@ ITEM_PIPELINES = {
 
     # 'scrapy.pipelines.images.ImagesPipeline': 1,
     # 'ArticleSpider.pipelines.ArticleImagePipeline': 1,
-    'ArticleSpider.mysqlpipelines.pipelines.articlesql': 2,
+    'ArticleSpider.pipelines.MysqlTwstedPipeles': 1,
+
+    # 'ArticleSpider.mysqlpipelines.pipelines.articlesql': 2,   #编外方法
 }
 
 MEDIA_ALLOW_REDIRECTS = True
