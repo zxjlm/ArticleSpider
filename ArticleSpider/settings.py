@@ -106,3 +106,8 @@ MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'zxj6131ming'
 MYSQL_PORT = '3306'
 MYSQL_DB = 'artical_spider'
+
+
+import sys
+Base_dir=os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0,os.path.join(Base_dir,'ArticleSpider'))
